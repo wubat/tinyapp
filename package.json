@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/wubat/tinyapp/issues"
   },
-  "homepage": "https://github.com/wubat/tinyapp#readme"
+  "homepage": "https://github.com/wubat/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
