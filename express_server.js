@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-const PORT = 8080
+const PORT = 3000
 
 app.set('view engine', 'ejs')
 
@@ -10,33 +10,56 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 }
 
-app.get('/', (req, res) => {
-  res.send('hello')
-})
+function generateRandomString() {
+  const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  let randomString = '';
 
-app.get('/urls.json', (req, res) => {
-  res.json(urlDatabase)
-})
+  for (let i = 0; i < 6; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    randomString += charset[randomIndex];
+  }
 
-app.get('/hello', (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n")
-})
+  return randomString;
+}
+
+app.use(express.urlencoded({ extended: true }));
+//old server test code_______________________________________________________________
+// app.get('/', (req, res) => {
+//   res.send('hello')
+// })
+
+// app.get('/urls.json', (req, res) => {
+//   res.json(urlDatabase)
+// })
+
+// app.get('/hello', (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n")
+// })
+
+app.post("/urls", (req, res) => {
+  console.log(req.body); // Log the POST request body to the console
+  res.send("Ok, it's been submitted"); // Respond with 'Ok' (we will replace this)
+});
 
 app.get('/urls', (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render('urls_index', templateVars)
 })
 
-app.get("/urls/:id", (req, res) => {
-  
-  const templateVars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id]
-  }
-  res.render("urls_show", templateVars)
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
+app.get('/urls/:id', (req, res) => {
+  const id = req.params.id
+  const templateVars = { id: id, longURL: urlDatabase[id] }
+  res.render('urls_show', templateVars)
  
 });
 
+
+
 app.listen(PORT, () => {
   console.log(`example app listening on port ${PORT}`)
+  console.log('are you sane?')
 })
