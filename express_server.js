@@ -7,7 +7,7 @@ app.set('view engine', 'ejs')
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "9sm5xK": "http://www.google.com",
 }
 
 function generateRandomString() {
@@ -37,7 +37,11 @@ app.use(express.urlencoded({ extended: true }));
 // })
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
+  const shortURL = generateRandomString()
+
+  urlDatabase[shortURL] = req.body.longURL
+  res.redirect(`/urls/${shortURL}`)
+  console.log(urlDatabase); // Log the POST request body to the console
   res.send("Ok, it's been submitted"); // Respond with 'Ok' (we will replace this)
 });
 
@@ -57,9 +61,14 @@ app.get('/urls/:id', (req, res) => {
  
 });
 
+app.get('/u/:id', (req, res) => {
+  const longURL = urlDatabase[req.params.id]
+  res.redirect(longURL)
+})
+
 
 
 app.listen(PORT, () => {
   console.log(`example app listening on port ${PORT}`)
-  console.log('are you sane?')
+  console.log('FOLLOW THE WHITE RABBIT')
 })
