@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const cookieParser = require('cookie-parser')
+const bcrypt = require('bcryptjs')
 const PORT = 3000
 
 app.set('view engine', 'ejs')
@@ -46,24 +47,25 @@ const users = {
   },
 }
 
-const hasEmailAlready = (email) => {
-  for (const userId in users) {
-  if (users[userId].email === email) {
-    return users[userId]
-  } 
-}
-return null
-}
 
-const passwordMatches = (password)  => {
-  for (const userId in users) {
-    if (users[userId].password === password) {
-      return true 
-    } 
-  }
-  return false
-}
-
+// const passwordMatches = (password)  => {
+  //   for (const userId in users) {
+    //     if (users[userId].password === password) {
+      //       return true 
+      //     } 
+      //   }
+      //   return false
+      // }
+      
+      const hasEmailAlready = (email) => {
+        for (const userId in users) {
+        if (users[userId].email === email) {
+          return users[userId]
+        } 
+      }
+      return null
+      }
+      
 const userLoggedIn = () => {
   if (req.cookies.user_id) {
     return true
@@ -80,28 +82,48 @@ const userOwnsUrl = (linkId) => {
   return false 
 }
 
+
+
 // ______________________POST_________________________________________
 
 app.post('/login', (req, res) => {
-  const emailTaken = hasEmailAlready(req.body.email)
+ 
+  let databaseUser = ""
 
+    for (userId in users) {
+      if (users[userId].email === req.body.email) {
+        databaseUser = userId
+        break
+      }
+    }
+  
+  
   if (!hasEmailAlready(req.body.email)) {
     return res.status(403).send('email not found, sorry')
-  } else if (!passwordMatches(req.body.password)) {
+  } 
+  
+  const passwordMatches = bcrypt.compareSync(req.body.password, users[databaseUser].password)
+  
+  if (!passwordMatches) {
+    console.log(req.body.password)
     return res.status(403).send('password does not match')
+    
   }
 
   res.cookie('user_id', hasEmailAlready(req.body.email))
   res.redirect('/urls')
 })
 
+
 app.post('/register', (req, res) => {
   const randomUserID = generateRandomString()
   const emailTaken = hasEmailAlready(req.body.email)
+  const hashedPassword = bcrypt.hashSync(req.body.password, 10)
+
   users[randomUserID] = {
     id: randomUserID,
     email: req.body.email,
-    password: req.body.password,
+    password: hashedPassword,
   }
 
   if (req.body.email === "" || req.body.password === "") {
@@ -121,7 +143,7 @@ app.post('/logout', (req, res) => {
   res.redirect('/login')
 })
 
-app.post('/urls/:id/delete', (req, res) => {///////////////////////////////
+app.post('/urls/:id/delete', (req, res) => {
   if (!userLoggedIn) {
     return res.send('you are not the logged in, cannot delete')
   }  else if (!userOwnsUrl(req.params.id)){
@@ -134,7 +156,7 @@ app.post('/urls/:id/delete', (req, res) => {///////////////////////////////
   res.redirect('/urls')
 })
 
-app.post('/urls/:id', (req, res) => {////////////////////////////////
+app.post('/urls/:id', (req, res) => {
   const shortURL = generateRandomString()
 
   if (!userLoggedIn) {
