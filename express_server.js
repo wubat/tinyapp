@@ -19,16 +19,25 @@ function generateRandomString() {
   return randomString;
 }
 
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+  // "b2xVn2": "http://www.lighthouselabs.ca",
+  // "9sm5xK": "http://www.google.com",
 }
 
 const users = {
   userRandomId: {
     id: 'userRandomID', 
     email: 'user@example.com',
-    password: "purple-monkey-dinosaur",
+    password: "asdf",
   },
   user2RandomID: {
     id: 'user2RandomID',
@@ -55,8 +64,23 @@ const passwordMatches = (password)  => {
   return false
 }
 
+const userLoggedIn = () => {
+  if (req.cookies.user_id) {
+    return true
+  }
+  return false  
+}
 
-// ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+const userOwnsUrl = (linkId) => {
+  for ( urlId in urlDatabase) {
+    if (urlId === linkId) {
+      return true
+    }
+  }
+  return false 
+}
+
+// ______________________POST_________________________________________
 
 app.post('/login', (req, res) => {
   const emailTaken = hasEmailAlready(req.body.email)
@@ -97,14 +121,31 @@ app.post('/logout', (req, res) => {
   res.redirect('/login')
 })
 
-app.post('/urls/:id/delete', (req, res) => {
+app.post('/urls/:id/delete', (req, res) => {///////////////////////////////
+  if (!userLoggedIn) {
+    return res.send('you are not the logged in, cannot delete')
+  }  else if (!userOwnsUrl(req.params.id)){
+    return res.send('you are not the owner of the URL, cannot delete')
+  } else if (!urlDatabase[req.params.id]) {
+    return res.send('url id not found')
+  }
+
   delete urlDatabase[req.params.id]
   res.redirect('/urls')
 })
 
-app.post('/urls/:id', (req, res) => {
+app.post('/urls/:id', (req, res) => {////////////////////////////////
   const shortURL = generateRandomString()
-  urlDatabase[shortURL] = req.body.longURL
+
+  if (!userLoggedIn) {
+    return res.send('you are not the logged in user to the URL, cannot make new URL')
+  } else if (!urlDatabase[req.params.id]) {
+    return res.send('url id not found')
+  } else if (!userOwnsUrl(req.params.id)) {
+    return res.send('you are not the owner of the URL, cannot post')
+  }
+
+  urlDatabase[shortURL].longURL = req.body.longURL
   console.log(urlDatabase)
   res.redirect('/urls')
 })
@@ -112,22 +153,37 @@ app.post('/urls/:id', (req, res) => {
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString()
 
-  urlDatabase[shortURL] = req.body.longURL
+  if (!req.cookies.user_id) {
+    return res.send('you must login to wield the power of shortened links')
+  }
+
+  urlDatabase[shortURL].longURL = req.body.longURL
   res.redirect(`/urls/${shortURL}`)
-  console.log(urlDatabase); // Log the POST request body to the console
-  res.send("Ok, it's been submitted"); // Respond with 'Ok' (we will replace this)
+  console.log(urlDatabase); 
+  res.send("Ok, it's been submitted"); 
 });
 
-//________________________________________________________________
+//_______________________GET_________________________________
 
 app.get('/login', (req, res) => {
+
+  if (req.cookies.user_id) {
+    return res.redirect('/urls')
+  }
+
   const templateVars = { 
     user: req.cookies.user_id
   }
   res.render('login', templateVars)
 })
 
+
 app.get('/register', (req, res) => {
+  
+  if (req.cookies.user_id) {
+    res.redirect('/urls')
+  }
+  
   const templateVars = {
     user: req.cookies.user_id
   }
@@ -136,33 +192,65 @@ app.get('/register', (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies.user_id) {
+    return res.redirect('/login')
+  }
+
   const templateVars = { 
     user: req.cookies.user_id
   }
   res.render("urls_new", templateVars);
 });
 
+
 app.get('/urls/:id', (req, res) => {
-  const id = req.params.id
   const templateVars = { 
-    id: id, 
-    longURL: urlDatabase[id],
+    id: req.params.id, 
+    longURL: urlDatabase[req.params.id].longURL,
     user: req.cookies.user_id
   }
+
+  if(urlDatabase[urlId].userID !== req.cookies.user_id) {
+    return res.send('you did not create the tinURL, so u cannot see it, sry')
+  }
+
   res.render('urls_show', templateVars)
   
 });
 
+
 app.get('/urls', (req, res) => {
+  const urlsForUser = (id) => {
+    const filteredUrls = {}
+
+    for (urlId in urlDatabase) {
+      if (urlDatabase[urlId].userID === id) {
+        filteredUrls[urlId] = urlDatabase[urlId]
+      }
+    }  
+
+  }
+
   const templateVars = { 
-    urls: urlDatabase,
+    urls: urlsForUser(req.cookies.user_id),
     user: req.cookies.user_id
   };  
+
+  if (!req.cookies.user_id) {
+    return res.send('you must login first to see these links')
+  }
+
   res.render('urls_index', templateVars)
 })
 
+
 app.get('/u/:id', (req, res) => {
-  const longURL = urlDatabase[req.params.id]
+  const longURL = urlDatabase[req.params.id].longURL
+
+  if (!longURL) {
+    return res.send('shortened link is not in database :(')
+  }
+
   res.redirect(longURL)
 })
 
