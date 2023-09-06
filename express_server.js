@@ -166,11 +166,27 @@ app.post("/urls", (req, res) => {
     return res.send('you must login to wield the power of shortened links');
   }
 
-  urlDatabase[shortURL].longURL = req.body.longURL;
+  // urlDatabase[shortURL]["longURL"] = req.body.longURL;
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id
+  }
+  // console.log(urlDatabase); 
+  // res.send("Ok, it's been submitted"); 
   res.redirect(`/urls/${shortURL}`);
-  console.log(urlDatabase); 
-  res.send("Ok, it's been submitted"); 
 });
+
+// const urlDatabase = {
+//   b6UTxQ: {
+//     longURL: "https://www.tsn.ca",
+//     userID: "aJ48lW",
+//   },
+//   i3BoGr: {
+//     longURL: "https://www.google.ca",
+//     userID: "aJ48lW",
+//   },
+
+// };
 
 //_______________________GET_________________________________
 
@@ -219,13 +235,24 @@ app.get('/urls/:id', (req, res) => {
     user: req.session.user_id
   };
 
-  if(urlDatabase[urlId].userID !== req.session.user_id) {
-    return res.send('you did not create the tinURL, so u cannot see it, sry');
-  }
-
+    if(urlDatabase[req.params.id].userID.id !== req.session.user_id.id) {
+      return res.send('you did not create the tinyURL, so u cannot see it, sry');
+    }
   res.render('urls_show', templateVars);
 });
 
+//-----------------PROBLEM HERE--------------------------
+app.get('/u/:id', (req, res) => {
+  const id = req.params.id
+  const longURL = urlDatabase[id].longURL;
+  console.log(urlDatabase[id])
+
+  if (!longURL) {
+    return res.send('shortened link is not in database :(');
+  }
+
+   res.redirect(longURL);
+});
 
 app.get('/urls', (req, res) => {
   const urlsForUser = (id) => {
@@ -251,16 +278,15 @@ app.get('/urls', (req, res) => {
 });
 
 
-app.get('/u/:id', (req, res) => {
-  const longURL = urlDatabase[req.params.id].longURL;
 
-  if (!longURL) {
-    return res.send('shortened link is not in database :(');
-  }
 
-  res.redirect(longURL);
+app.get('/', (req, res) => {
+  const templateVars = {
+    user: null
+  };
+
+  res.render('login', templateVars);
 });
-
 
 app.listen(PORT, () => {
   console.log(`example app listening on port ${PORT}`);

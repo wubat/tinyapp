@@ -19,8 +19,15 @@
         <a class="nav-item nav-link" href="/login">Login</a>
         <a class="nav-item nav-link" href="/register">register</a>
         
-        <% if (user) { %>
+        <% if (!user) { %>
           
+          <p>Welcome! Please Login or Register </p>
+          <form action ='/logout' method='POST'>
+            <button type="submit">LogIn</button>
+          </form>
+
+        <% } else if (user) { %>
+        
           <p>hello <%= user.email %></p>
           <form action ='/logout' method='POST'>
             <button type="submit">LogOut</button>
