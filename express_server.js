@@ -67,7 +67,7 @@ const userLoggedIn = () => {
   if (req.cookies.user_id) {
     return true;
   }
-  return false  ;
+  return false;
 };
 
 const userOwnsUrl = (linkId) => {
@@ -76,7 +76,7 @@ const userOwnsUrl = (linkId) => {
       return true;
     }
   }
-  return false ;
+  return false;
 };
 
 
@@ -166,29 +166,15 @@ app.post("/urls", (req, res) => {
     return res.send('you must login to wield the power of shortened links');
   }
 
-  // urlDatabase[shortURL]["longURL"] = req.body.longURL;
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
     userID: req.session.user_id
-  }
-  // console.log(urlDatabase); 
-  // res.send("Ok, it's been submitted"); 
+  };
+
   res.redirect(`/urls/${shortURL}`);
 });
 
-// const urlDatabase = {
-//   b6UTxQ: {
-//     longURL: "https://www.tsn.ca",
-//     userID: "aJ48lW",
-//   },
-//   i3BoGr: {
-//     longURL: "https://www.google.ca",
-//     userID: "aJ48lW",
-//   },
-
-// };
-
-//_______________________GET_________________________________
+_______________________GET______________________________
 
 app.get('/login', (req, res) => {
 
@@ -241,11 +227,9 @@ app.get('/urls/:id', (req, res) => {
   res.render('urls_show', templateVars);
 });
 
-//-----------------PROBLEM HERE--------------------------
 app.get('/u/:id', (req, res) => {
-  const id = req.params.id
+  const id = req.params.id;
   const longURL = urlDatabase[id].longURL;
-  console.log(urlDatabase[id])
 
   if (!longURL) {
     return res.send('shortened link is not in database :(');
@@ -276,8 +260,6 @@ app.get('/urls', (req, res) => {
 
   res.render('urls_index', templateVars);
 });
-
-
 
 
 app.get('/', (req, res) => {
