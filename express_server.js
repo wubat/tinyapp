@@ -130,10 +130,10 @@ app.post('/urls/:id/delete', (req, res) => {
     }
     return false;
   };
-  
-  const databaseLinkKey = (sessionId) => {
+
+  const databaseLinkKey = (paramsID) => {
     for (linkItem in urlDatabase) {
-      if (urlDatabase[linkItem]["userID"] === sessionId) {
+      if (linkItem === paramsID) {
         return linkItem;
       }
     }
@@ -145,7 +145,7 @@ app.post('/urls/:id/delete', (req, res) => {
     return res.send('you are not the owner of the URL, cannot delete');
   } 
 
-  delete urlDatabase[databaseLinkKey(req.session.user_id.id)];
+  delete urlDatabase[databaseLinkKey(req.params.id)];
   res.redirect('/urls');
 });
 
