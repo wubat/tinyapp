@@ -15,6 +15,7 @@ app.use(cookieSession({
   keys: ['yomama']
 }));
 
+//generates random string for link's short URL
 function generateRandomString() {
   const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   let randomString = '';
@@ -52,6 +53,7 @@ const users = {
   },
 };
 
+//checks if new email is already in users database
 const hasEmailAlready = (email) => {
   for (const userId in users) {
     if (users[userId].email === email) {
@@ -60,7 +62,8 @@ const hasEmailAlready = (email) => {
   }
   return null
 };
-      
+
+//checks if user is logged in
 const userLoggedIn = () => {
   if (req.cookies.user_id) {
     return true;
@@ -71,15 +74,15 @@ const userLoggedIn = () => {
 
 // ______________________POST_________________________________________
 
+
 app.post('/login', (req, res) => {
- 
   let databaseUser = getUserByEmail(req.body.email, users);
 
   if (!hasEmailAlready(req.body.email)) {
     return res.status(403).send('email not found, sorry');
   }
   
-  const passwordMatches = bcrypt.compareSync(req.body.password, users[databaseUser].password);
+  const passwordMatches = bcrypt.compareSync(req.body.password, users[databaseUser.id].password);
   
   if (!passwordMatches) {
     console.log(req.body.password);
@@ -87,6 +90,7 @@ app.post('/login', (req, res) => {
   }
 
   req.session.user_id = hasEmailAlready(req.body.email);
+
   res.redirect('/urls');
 });
 
@@ -110,7 +114,6 @@ app.post('/register', (req, res) => {
   }
 
   req.session.user_id = users[randomUserID];
-  console.log(users);
   res.redirect('/urls');
 });
 
@@ -119,7 +122,6 @@ app.post('/logout', (req, res) => {
   req.session = null;
   res.redirect('/login');
 });
-
 
 app.post('/urls/:id/delete', (req, res) => {
   const userOwnsUrl = (linkUserId) => {
@@ -141,7 +143,7 @@ app.post('/urls/:id/delete', (req, res) => {
 
   if (!userLoggedIn) {
     return res.send('you are not the logged in user, cannot delete');
-  }  else if (!userOwnsUrl(req.session.user_id.id)){
+  }  else if (!req.session.user_id.id){
     return res.send('you are not the owner of the URL, cannot delete');
   } 
 
@@ -151,26 +153,23 @@ app.post('/urls/:id/delete', (req, res) => {
 
 
 app.post('/urls/:id', (req, res) => {
-  const shortURL = generateRandomString();
-  
-  urlDatabase[shortURL] = {
-    longURL: req.body.longURL,
-    userID: req.session.user_id.id
-  };
-
-  const userHasUrl = urlDatabase[shortURL].userID === req.session.user_id.id
-  
-  if (!req.session.user_id.id) {
+  if (!req.session.user_id) {
     return res.send('you are not the logged in user to the URL, cannot make new URL');
-  } else if (!urlDatabase[shortURL].userID) {
+  } else if (!urlDatabase[req.params.id].userID) {
     return res.send('url userID not found');
   } else if (!userHasUrl) {
     return res.send('you are not the owner of the URL, cannot post');
   }
 
+  urlDatabase[req.params.id] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id.id
+  }
+
+  const userHasUrl = urlDatabase[req.params.id].userID === req.session.user_id.id
+
   res.redirect('/urls');
 });
-
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
@@ -186,6 +185,7 @@ app.post("/urls", (req, res) => {
 
   res.redirect(`/urls/${shortURL}`);
 });
+
 
 //_______________________GET______________________________
 
@@ -228,17 +228,16 @@ app.get("/urls/new", (req, res) => {
 
 
 app.get('/urls/:id', (req, res) => {
+  if(!req.session.user_id) {
+    return res.send('you did not create the tinyURL, so u cannot see it, sry');
+  }
+
   const templateVars = { 
     id: req.params.id, 
     longURL: urlDatabase[req.params.id].longURL,
     user: req.session.user_id
   };
 
-
-
-    if(urlDatabase[req.params.id].userID !== req.session.user_id.id) {
-      return res.send('you did not create the tinyURL, so u cannot see it, sry');
-    }
   res.render('urls_show', templateVars);
 });
 
@@ -267,14 +266,14 @@ app.get('/urls', (req, res) => {
     return filteredUrls 
   };
   
+  if (!req.session.user_id) {
+    return res.send('you must login first to see these links');
+  }
+
   const templateVars = { 
     urls: urlsForUser(req.session.user_id.id),
     user: req.session.user_id
   };  
-  
-  if (!req.session.user_id) {
-    return res.send('you must login first to see these links');
-  }
 
   res.render('urls_index', templateVars);
 });

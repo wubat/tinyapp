@@ -21,7 +21,7 @@
           Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
         </p>
 
-          <form action="/urls/:id" method="POST">
+          <form action="/urls/<%= id %>" method="POST">
             <input name="longURL" />
             <button type="submit">MAKE TINY URL</button> 
           </form>
