@@ -152,7 +152,11 @@ app.post('/urls/:id/delete', (req, res) => {
 });
 
 
+
+/////////////////////////////////////////////////////
 app.post('/urls/:id', (req, res) => {
+  const userHasUrl = urlDatabase[req.params.id].userID === req.session.user_id.id
+  
   if (!req.session.user_id) {
     return res.send('you are not the logged in user to the URL, cannot make new URL');
   } else if (!urlDatabase[req.params.id].userID) {
@@ -166,10 +170,11 @@ app.post('/urls/:id', (req, res) => {
     userID: req.session.user_id.id
   }
 
-  const userHasUrl = urlDatabase[req.params.id].userID === req.session.user_id.id
 
   res.redirect('/urls');
 });
+//////////////////////////////////////////////////////////
+
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
