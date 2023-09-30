@@ -153,7 +153,6 @@ app.post('/urls/:id/delete', (req, res) => {
 
 
 
-/////////////////////////////////////////////////////
 app.post('/urls/:id', (req, res) => {
   const userHasUrl = urlDatabase[req.params.id].userID === req.session.user_id.id
   
@@ -173,7 +172,6 @@ app.post('/urls/:id', (req, res) => {
 
   res.redirect('/urls');
 });
-//////////////////////////////////////////////////////////
 
 
 app.post("/urls", (req, res) => {
@@ -231,19 +229,24 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
-
 app.get('/urls/:id', (req, res) => {
-  if(!req.session.user_id) {
-    return res.send('you did not create the tinyURL, so u cannot see it, sry');
+  if (!users[req.session.user_id]) {
+    return res.status(401).send("You must log in to access this page.");
   }
-
-  const templateVars = { 
-    id: req.params.id, 
+  if (!urlDatabase[req.params.id]) {
+    return res.status(404).send("URL not found.");
+  }
+  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
+    return res.status(403).send("This is not the URL that you created :(");
+  }
+  const templateVars = {
+    user: users[req.session.user_id],
     longURL: urlDatabase[req.params.id].longURL,
-    user: req.session.user_id
+    id: req.params.id,
+    urls: urlDatabase,
   };
-
-  res.render('urls_show', templateVars);
+  res.render("urls_show", templateVars);
+  
 });
 
 
