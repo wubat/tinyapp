@@ -230,21 +230,23 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get('/urls/:id', (req, res) => {
-  if (!users[req.session.user_id]) {
-    return res.status(401).send("You must log in to access this page.");
-  }
-  if (!urlDatabase[req.params.id]) {
-    return res.status(404).send("URL not found.");
-  }
-  if (urlDatabase[req.params.id].userID !== req.session.user_id) {
-    return res.status(403).send("This is not the URL that you created :(");
-  }
   const templateVars = {
     user: users[req.session.user_id],
     longURL: urlDatabase[req.params.id].longURL,
     id: req.params.id,
     urls: urlDatabase,
   };
+
+  if (!req.session.user_id) {
+    return res.send("You must log in to access this page.");
+  }
+  if (!urlDatabase[req.params.id]) {
+    return res.send("URL not found.");
+  }
+  if (urlDatabase[req.params.id].userID !== req.session.user_id.id) {
+    return res.send("This is not the URL that you created :(");
+  }
+  
   res.render("urls_show", templateVars);
   
 });
