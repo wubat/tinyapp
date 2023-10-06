@@ -98,8 +98,16 @@ app.post('/login', (req, res) => {
 
 app.post('/register', (req, res) => {
   const randomUserID = generateRandomString();
-  const emailTaken = hasEmailAlready(req.body.email);
+  // const emailTaken = hasEmailAlready(req.body.email);
   const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+
+  const emailIsTaken = (email) => {
+    for (const user in users) {
+      if (users[user].email === email) {
+        return true
+      } 
+    }
+  }
 
   users[randomUserID] = {
     id: randomUserID,
@@ -109,8 +117,7 @@ app.post('/register', (req, res) => {
 
   if (req.body.email === "" || req.body.password === "") {
      return res.status(400).send('email or pass cannot be empty');
-  } else if (emailTaken !== null) {
-    console.log(users);
+  } else if (emailIsTaken(req.body.email)) {
     return res.status(400).send('email is taken already, sorry');
   }
 
@@ -125,14 +132,9 @@ app.post('/logout', (req, res) => {
 });
 
 app.post('/urls/:id/delete', (req, res) => {
-  const userOwnsUrl = (linkUserId) => {
-    for ( urlId in urlDatabase) {
-      if (urlDatabase[urlId]["userID"] === linkUserId) {
-        return true;
-      }
-    }
-    return false;
-  };
+  const urlLinkOwnerId = urlDatabase[req.params.id]["userID"]
+  const userSessionId = req.session.user_id.id
+  const userOwnsUrl = urlLinkOwnerId === userSessionId
 
   const databaseLinkKey = (paramsID) => {
     for (linkItem in urlDatabase) {
@@ -142,17 +144,16 @@ app.post('/urls/:id/delete', (req, res) => {
     }
   }
 
-  console.log(req.params.id)
-
   if (!userLoggedIn) {
     return res.send('you are not the logged in user, cannot delete');
   }  
   
-  if (!userOwnsUrl){
+  if (!userOwnsUrl) {
     return res.send('you are not the owner of the URL, cannot delete');
-  } 
+  } else {
+    delete urlDatabase[databaseLinkKey(req.params.id)];
+  }
 
-  delete urlDatabase[databaseLinkKey(req.params.id)];
   res.redirect('/urls');
 });
 
