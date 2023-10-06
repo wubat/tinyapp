@@ -98,16 +98,16 @@ app.post('/login', (req, res) => {
 
 app.post('/register', (req, res) => {
   const randomUserID = generateRandomString();
-  // const emailTaken = hasEmailAlready(req.body.email);
   const hashedPassword = bcrypt.hashSync(req.body.password, 10);
 
+  //checks if email is in users database already  
   const emailIsTaken = (email) => {
     for (const user in users) {
       if (users[user].email === email) {
-        return true
+        return true;
       } 
     }
-  }
+  };
 
   users[randomUserID] = {
     id: randomUserID,
@@ -132,17 +132,18 @@ app.post('/logout', (req, res) => {
 });
 
 app.post('/urls/:id/delete', (req, res) => {
-  const urlLinkOwnerId = urlDatabase[req.params.id]["userID"]
-  const userSessionId = req.session.user_id.id
-  const userOwnsUrl = urlLinkOwnerId === userSessionId
+  const urlLinkOwnerId = urlDatabase[req.params.id]["userID"];
+  const userSessionId = req.session.user_id.id;
+  const userOwnsUrl = urlLinkOwnerId === userSessionId;
 
+  //gets shortURL link matching target link parameter
   const databaseLinkKey = (paramsID) => {
     for (linkItem in urlDatabase) {
       if (linkItem === paramsID) {
         return linkItem;
       }
     }
-  }
+  };
 
   if (!userLoggedIn) {
     return res.send('you are not the logged in user, cannot delete');
@@ -173,7 +174,7 @@ app.post('/urls/:id', (req, res) => {
   urlDatabase[req.params.id] = {
     longURL: req.body.longURL,
     userID: req.session.user_id.id
-  }
+  };
 
   res.redirect('/urls');
 });
@@ -261,6 +262,7 @@ app.get('/urls/:id', (req, res) => {
 app.get('/u/:id', (req, res) => {
   const id = req.params.id;
   const longURL = urlDatabase[id] ? urlDatabase[id].longURL : null;
+  
   if (!longURL) {
     return res.send("URL not found.");
   }
@@ -277,7 +279,7 @@ app.get('/urls', (req, res) => {
         filteredUrls[urlId] = urlDatabase[urlId];
       }
     } 
-    return filteredUrls 
+    return filteredUrls;
   };
   
   if (!req.session.user_id) {
@@ -295,9 +297,9 @@ app.get('/urls', (req, res) => {
 
 app.get('/', (req, res) => {
   if (!userLoggedIn) {
-    res.redirect('/login')
+    res.redirect('/login');
   } else {
-    res.redirect('/urls')
+    res.redirect('/urls');
   }
 });
 
