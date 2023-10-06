@@ -6,6 +6,7 @@ const PORT = 3000;
 const cookieSession = require('cookie-session');
 const getUserByEmail = require('./helpers.js');
 const { use } = require('chai');
+const e = require('express');
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -141,9 +142,13 @@ app.post('/urls/:id/delete', (req, res) => {
     }
   }
 
+  console.log(req.params.id)
+
   if (!userLoggedIn) {
     return res.send('you are not the logged in user, cannot delete');
-  }  else if (!req.session.user_id.id){
+  }  
+  
+  if (!userOwnsUrl){
     return res.send('you are not the owner of the URL, cannot delete');
   } 
 
@@ -156,7 +161,7 @@ app.post('/urls/:id/delete', (req, res) => {
 app.post('/urls/:id', (req, res) => {
   const userHasUrl = urlDatabase[req.params.id].userID === req.session.user_id.id
   
-  if (!req.session.user_id) {
+  if (!req.session.user_id.id) {
     return res.send('you are not the logged in user to the URL, cannot make new URL');
   } else if (!urlDatabase[req.params.id].userID) {
     return res.send('url userID not found');
@@ -168,7 +173,6 @@ app.post('/urls/:id', (req, res) => {
     longURL: req.body.longURL,
     userID: req.session.user_id.id
   }
-
 
   res.redirect('/urls');
 });
@@ -230,13 +234,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get('/urls/:id', (req, res) => {
-  const templateVars = {
-    user: users[req.session.user_id],
-    longURL: urlDatabase[req.params.id].longURL,
-    id: req.params.id,
-    urls: urlDatabase,
-  };
-
+  
   if (!req.session.user_id) {
     return res.send("You must log in to access this page.");
   }
@@ -247,6 +245,13 @@ app.get('/urls/:id', (req, res) => {
     return res.send("This is not the URL that you created :(");
   }
   
+  const templateVars = {
+    user: req.session.user_id,
+    longURL: urlDatabase[req.params.id].longURL,
+    id: req.params.id,
+    urls: urlDatabase,
+  };
+
   res.render("urls_show", templateVars);
   
 });
@@ -254,13 +259,11 @@ app.get('/urls/:id', (req, res) => {
 
 app.get('/u/:id', (req, res) => {
   const id = req.params.id;
-  const longUrlLink = urlDatabase[id].longURL;
-  
-  if (!longUrlLink) {
-    return res.send('shortened link is not in database :(');
+  const longURL = urlDatabase[id] ? urlDatabase[id].longURL : null;
+  if (!longURL) {
+    return res.send("URL not found.");
   }
-  
-   res.redirect(longUrlLink);
+  res.redirect(longURL);
 });
 
 
@@ -290,11 +293,11 @@ app.get('/urls', (req, res) => {
 
 
 app.get('/', (req, res) => {
-  const templateVars = {
-    user: null
-  };
-
-  res.render('login', templateVars);
+  if (!userLoggedIn) {
+    res.redirect('/login')
+  } else {
+    res.redirect('/urls')
+  }
 });
 
 app.listen(PORT, () => {
