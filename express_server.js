@@ -4,9 +4,6 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const PORT = 3000;
 const cookieSession = require('cookie-session');
-const getUserByEmail = require('./helpers.js');
-const { use } = require('chai');
-const e = require('express');
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -16,44 +13,15 @@ app.use(cookieSession({
   keys: ['yomama']
 }));
 
-//generates random string for link's short URL
-function generateRandomString() {
-  const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  let randomString = '';
+const { getUserByEmail, generateRandomString, userLoggedIn } = require('./helpers.js');
+const { urlDatabase, users } = require('./users_and_links_data.js')
 
-  for (let i = 0; i < 6; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    randomString += charset[randomIndex];
-  }
 
-  return randomString;
-};
 
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW",
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW",
-  },
+// ______________________POST_________________________________________
 
-};
 
-const users = {
-  userRandomId: {
-    id: 'userRandomID', 
-    email: 'user@example.com',
-    password: "asdf",
-  },
-  user2RandomID: {
-    id: 'user2RandomID',
-    email: 'user2@example.com',
-    password: 'dishwasher-funk',
-  },
-};
-
+app.post('/login', (req, res) => {
 //checks if new email is already in users database
 const hasEmailAlready = (email) => {
   for (const userId in users) {
@@ -63,20 +31,7 @@ const hasEmailAlready = (email) => {
   }
   return null
 };
-
-//checks if user is logged in
-const userLoggedIn = () => {
-  if (req.cookies.user_id) {
-    return true;
-  }
-  return false;
-};
-
-
-// ______________________POST_________________________________________
-
-
-app.post('/login', (req, res) => {
+  
   let databaseUser = getUserByEmail(req.body.email, users);
 
   if (!hasEmailAlready(req.body.email)) {
@@ -101,25 +56,25 @@ app.post('/register', (req, res) => {
   const hashedPassword = bcrypt.hashSync(req.body.password, 10);
 
   //checks if email is in users database already  
-  const emailIsTaken = (email) => {
+  const emailIsTaken = (registrationEmail) => {
     for (const user in users) {
-      if (users[user].email === email) {
+      if (users[user].email === registrationEmail) {
         return true;
       } 
     }
   };
-
+  
+  if (req.body.email === "" || req.body.password === "") {
+    return res.status(400).send('email or pass cannot be empty');
+  } else if (emailIsTaken(req.body.email)) {
+    return res.status(400).send('email is taken already, sorry');
+  }
+  
   users[randomUserID] = {
     id: randomUserID,
     email: req.body.email,
     password: hashedPassword,
   };
-
-  if (req.body.email === "" || req.body.password === "") {
-     return res.status(400).send('email or pass cannot be empty');
-  } else if (emailIsTaken(req.body.email)) {
-    return res.status(400).send('email is taken already, sorry');
-  }
 
   req.session.user_id = users[randomUserID];
   res.redirect('/urls');
@@ -133,7 +88,7 @@ app.post('/logout', (req, res) => {
 
 app.post('/urls/:id/delete', (req, res) => {
   const urlLinkOwnerId = urlDatabase[req.params.id]["userID"];
-  const userSessionId = req.session.user_id.id;
+  const userSessionId = req.session.user_id ? req.session.user_id.id : null;
   const userOwnsUrl = urlLinkOwnerId === userSessionId;
 
   //gets shortURL link matching target link parameter
@@ -283,7 +238,7 @@ app.get('/urls', (req, res) => {
   };
   
   if (!req.session.user_id) {
-    return res.send('you must login first to see these links');
+    res.send('you must login first to see these links');
   }
 
   const templateVars = { 
@@ -296,10 +251,19 @@ app.get('/urls', (req, res) => {
 
 
 app.get('/', (req, res) => {
-  if (!userLoggedIn) {
-    res.redirect('/login');
+  //checks if current cookie matches user in user database
+  const cookieMatchesUser = function(cookie, userDatabase) {
+    for (const user in userDatabase) {
+      if (cookie === user) {
+        return true;
+      }
+    } return false;
+  };
+
+  if (cookieMatchesUser(req.session.user_id, users)) {
+    res.redirect("/urls");
   } else {
-    res.redirect('/urls');
+    res.redirect("/login");
   }
 });
 
